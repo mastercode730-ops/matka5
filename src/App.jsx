@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { WHATSAPP_URL, WHATSAPP_NUMBER, SITE_NAME, SITE_DOMAIN } from './constants';
+import { fetchTodayResults, fetchMonthlyChart } from './api';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -20,9 +21,8 @@ export default function App() {
   const loadResults = useCallback(async () => {
     try {
       setSyncing(true);
-      const res = await fetch('/api/results/today');
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
+      const json = await fetchTodayResults();
+      if (json && json.success && Array.isArray(json.data)) {
         setGames(json.data);
         if (json.today_date) setTodayDate(json.today_date);
         if (json.yesterday_date) setYDate(json.yesterday_date);
@@ -42,9 +42,8 @@ export default function App() {
 
   const loadChart = useCallback(async (month, year) => {
     try {
-      const res = await fetch(`/api/chart/monthly?month=${month}&year=${year}`);
-      const json = await res.json();
-      if (json.success && json.rows) {
+      const json = await fetchMonthlyChart(month, year);
+      if (json && json.success && json.rows) {
         setChartData(json);
       }
     } catch (e) {

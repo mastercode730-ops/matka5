@@ -61,3 +61,24 @@ export async function fetchMonthlyChart(month, year) {
 
   return { success: false, rows: [] };
 }
+
+
+export async function fetchAnnouncement() {
+  try {
+    const res = await fetch('/api/announcement');
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success) return json;
+    }
+  } catch (e) {}
+
+  try {
+    const res = await fetch(`${BACKEND_FALLBACK}/api/announcement`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success) return json;
+    }
+  } catch (e) {}
+
+  return { success: false, active: false, text: '' };
+}

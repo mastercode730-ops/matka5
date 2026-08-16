@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { WHATSAPP_URL, WHATSAPP_NUMBER, SITE_NAME, SITE_DOMAIN } from './constants';
-import { fetchTodayResults, fetchMonthlyChart } from './api';
+import { fetchTodayResults, fetchMonthlyChart, fetchAnnouncement } from './api';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -17,11 +17,14 @@ export default function App() {
   const [chartMonth, setChartMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [chartYear, setChartYear]   = useState(() => String(new Date().getFullYear()));
   const [chartData, setChartData]   = useState(null);
+  const [announcement, setAnnouncement] = useState(null);
 
   const loadResults = useCallback(async () => {
     try {
       setSyncing(true);
       const json = await fetchTodayResults();
+      const annJson = await fetchAnnouncement();
+      if (annJson && annJson.success) setAnnouncement(annJson);
       if (json && json.success && Array.isArray(json.data)) {
         setGames(json.data);
         if (json.today_date) setTodayDate(json.today_date);
@@ -113,6 +116,21 @@ export default function App() {
           </a>
         </div>
       </header>
+
+      {/* ── LIVE ANNOUNCEMENT / ADVERTISEMENT BANNER ── */}
+      {announcement && announcement.active && announcement.text && (
+        <div className="adv-banner" role="alert">
+          <div className="adv-banner-inner">
+            <span className="adv-badge">📢 SPECIAL NOTICE</span>
+            <span className="adv-text" dangerouslySetInnerHTML={{
+              __html: announcement.text.replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+              )
+            }} />
+          </div>
+        </div>
+      )}
 
       <div className="wrap">
         {/* ── WHATSAPP BANNER ── */}

@@ -6,6 +6,10 @@ import {
   SITE_DOMAIN,
 } from "./constants";
 import { fetchTodayResults, fetchMonthlyChart, fetchAnnouncement } from "./api";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsConditions from "./components/TermsConditions";
+import Disclaimer from "./components/Disclaimer";
+import Footer from "./components/Footer";
 
 const MONTH_NAMES = [
   "January",
@@ -24,6 +28,14 @@ const MONTH_NAMES = [
 const REFRESH_MS = 15_000;
 
 export default function App() {
+  const [currentPage, setCurrentPage] = useState(() => {
+    const path = window.location.pathname;
+    if (path === "/privacy-policy" || path === "/privacy") return "privacy";
+    if (path === "/terms-conditions" || path === "/terms") return "terms";
+    if (path === "/disclaimer") return "disclaimer";
+    return "home";
+  });
+
   const [games, setGames] = useState([]);
   const [todayDate, setTodayDate] = useState("");
   const [yesterdayDate, setYDate] = useState("");
@@ -37,6 +49,34 @@ export default function App() {
   );
   const [chartData, setChartData] = useState(null);
   const [announcement, setAnnouncement] = useState(null);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === "/privacy-policy" || path === "/privacy") setCurrentPage("privacy");
+      else if (path === "/terms-conditions" || path === "/terms") setCurrentPage("terms");
+      else if (path === "/disclaimer") setCurrentPage("disclaimer");
+      else setCurrentPage("home");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateTo = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const urlMap = {
+      privacy: "/privacy-policy",
+      terms: "/terms-conditions",
+      disclaimer: "/disclaimer",
+      home: "/",
+    };
+    const targetUrl = urlMap[page] || "/";
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({}, "", targetUrl);
+    }
+  };
 
   const loadResults = useCallback(async () => {
     try {
@@ -159,7 +199,13 @@ export default function App() {
 
       {/* ── HEADER ── */}
       <header className="header-mumbai">
-        <h1>{SITE_NAME}</h1>
+        <h1
+          style={{ cursor: "pointer" }}
+          onClick={() => navigateTo("home")}
+          title="Go to Home"
+        >
+          {SITE_NAME}
+        </h1>
         <div className="sub">
           {fmtHindiDate(todayDate || new Date())} &bull; {SITE_DOMAIN}
         </div>
@@ -216,238 +262,262 @@ export default function App() {
       )}
 
       <div className="wrap">
-        {/* ── WHATSAPP BANNER ── */}
-        <div className="wa-mumbai-banner">
-          <div>
-            <div className="wa-mumbai-title">
-              👑 सीधा खाईवाल दरबार &bull; MUMBAI SATTA SUPERFAST
-            </div>
-            <div className="wa-mumbai-sub">
-              सिंगल जोड़ी और हरूफ प्राप्त करने के लिए WhatsApp करें:{" "}
-              {WHATSAPP_NUMBER}
-            </div>
-          </div>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-wa-mumbai"
-          >
-            📲 WhatsApp चैट
-          </a>
-        </div>
-
-        {/* ── TEMPLE ARCH SPOTLIGHT ── */}
-        {royalLead && (
-          <div className="arch-mumbai">
-            <span className="lbl">शुभ लाइव परिणाम (LIVE DRAW)</span>
-            <div
-              style={{
-                fontSize: "28px",
-                fontWeight: 900,
-                color: "var(--gold-2)",
-              }}
-            >
-              {royalLead.name}
-            </div>
-            <div className="num">
-              {!royalLead.today_number ||
-              royalLead.today_number === "XX" ||
-              royalLead.today_number === "--" ? (
-                <SpinnerIcon />
-              ) : (
-                royalLead.today_number
-              )}
-            </div>
-            <div style={{ color: "var(--dim)", fontSize: "14px" }}>
-              समय: <b style={{ color: "#fff" }}>{royalLead.draw_time}</b>{" "}
-              &nbsp;|&nbsp; कल का अंक:{" "}
-              <b style={{ color: "var(--gold-2)" }}>
-                {royalLead.yesterday_number || "—"}
-              </b>
-            </div>
-          </div>
+        {currentPage === "privacy" && (
+          <PrivacyPolicy onBack={() => navigateTo("home")} />
         )}
 
-        {/* ── SEARCH BAR ── */}
-        <div style={{ margin: "20px 0 10px" }}>
-          <input
-            type="text"
-            style={{
-              width: "100%",
-              padding: "12px 18px",
-              border: "2px solid var(--gold)",
-              borderRadius: "25px",
-              fontSize: "15px",
-              background: "rgba(0,0,0,0.4)",
-              color: "#fff",
-              outline: "none",
-            }}
-            placeholder="🔍 गेम सर्च करें (Gali, Desawar, Faridabad, Ghaziabad...)"
-            value={searchQ}
-            onChange={(e) => setSearchQ(e.target.value)}
-          />
-        </div>
+        {currentPage === "terms" && (
+          <TermsConditions onBack={() => navigateTo("home")} />
+        )}
 
-        {/* ── CARDS GRID ── */}
-        <div
-          style={{
-            margin: "28px 0 12px",
-            fontSize: "20px",
-            fontWeight: 800,
-            color: "var(--gold-2)",
-            textAlign: "center",
-          }}
-        >
-          ✦ सभी सट्टा बाज़ार परिणाम (ALL LIVE RESULTS) ✦
-        </div>
+        {currentPage === "disclaimer" && (
+          <Disclaimer onBack={() => navigateTo("home")} />
+        )}
 
-        <div className="cards-mumbai">
-          {filtered.map((g) => {
-            const isPending =
-              !g.today_number ||
-              g.today_number === "XX" ||
-              g.today_number === "--";
-
-            return (
-              <div key={g.code} className="card-mumbai">
-                <div className="card-mumbai-in">
-                  <div className="card-mumbai-name">{g.name}</div>
-                  <div className="card-mumbai-time">
-                    ⏰ {g.draw_time} &nbsp;|&nbsp; कल:{" "}
-                    {g.yesterday_number || "—"}
-                  </div>
-                  <div
-                    className={`card-mumbai-badge ${isPending ? "pending" : ""}`}
-                  >
-                    {isPending ? <SpinnerIcon /> : g.today_number}
-                  </div>
+        {currentPage === "home" && (
+          <>
+            {/* ── WHATSAPP BANNER ── */}
+            <div className="wa-mumbai-banner">
+              <div>
+                <div className="wa-mumbai-title">
+                  👑 सीधा खाईवाल दरबार &bull; MUMBAI SATTA SUPERFAST
+                </div>
+                <div className="wa-mumbai-sub">
+                  सिंगल जोड़ी और हरूफ प्राप्त करने के लिए WhatsApp करें:{" "}
+                  {WHATSAPP_NUMBER}
                 </div>
               </div>
-            );
-          })}
-        </div>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-wa-mumbai"
+              >
+                📲 WhatsApp चैट
+              </a>
+            </div>
 
-        {/* ── MONTHLY ARCHIVE TABLE ── */}
-        <div
-          style={{
-            margin: "40px 0 12px",
-            fontSize: "20px",
-            fontWeight: 800,
-            color: "var(--gold-2)",
-            textAlign: "center",
-          }}
-        >
-          📊 मासिक रिकॉर्ड चार्ट &mdash;{" "}
-          {chartData
-            ? `${MONTH_NAMES[parseInt(chartData.month, 10) - 1]?.toUpperCase()} ${chartData.year}`
-            : "ARCHIVE"}
-        </div>
+            {/* ── TEMPLE ARCH SPOTLIGHT ── */}
+            {royalLead && (
+              <div className="arch-mumbai">
+                <span className="lbl">शुभ लाइव परिणाम (LIVE DRAW)</span>
+                <div
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: 900,
+                    color: "var(--gold-2)",
+                  }}
+                >
+                  {royalLead.name}
+                </div>
+                <div className="num">
+                  {!royalLead.today_number ||
+                  royalLead.today_number === "XX" ||
+                  royalLead.today_number === "--" ? (
+                    <SpinnerIcon />
+                  ) : (
+                    royalLead.today_number
+                  )}
+                </div>
+                <div style={{ color: "var(--dim)", fontSize: "14px" }}>
+                  समय: <b style={{ color: "#fff" }}>{royalLead.draw_time}</b>{" "}
+                  &nbsp;|&nbsp; कल का अंक:{" "}
+                  <b style={{ color: "var(--gold-2)" }}>
+                    {royalLead.yesterday_number || "—"}
+                  </b>
+                </div>
+              </div>
+            )}
 
-        <div className="archive-card-mumbai">
-          <table className="table-mumbai" aria-label="Monthly Archive Chart">
-            <thead>
-              <tr>
-                <th style={{ width: 60 }}>तारीख</th>
-                <th>DESAWAR</th>
-                <th>FARIDABAD</th>
-                <th>GAZIYABAD</th>
-                <th>GALI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chartData?.rows?.map((r) => {
-                const isToday = r.day === todayDay;
-                const hasNum = (val) => val && val !== "XX" && val !== "--";
+            {/* ── SEARCH BAR ── */}
+            <div style={{ margin: "20px 0 10px" }}>
+              <input
+                type="text"
+                style={{
+                  width: "100%",
+                  padding: "12px 18px",
+                  border: "2px solid var(--gold)",
+                  borderRadius: "25px",
+                  fontSize: "15px",
+                  background: "rgba(0,0,0,0.4)",
+                  color: "#fff",
+                  outline: "none",
+                }}
+                placeholder="🔍 गेम सर्च करें (Gali, Desawar, Faridabad, Ghaziabad...)"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+              />
+            </div>
+
+            {/* ── CARDS GRID ── */}
+            <div
+              style={{
+                margin: "28px 0 12px",
+                fontSize: "20px",
+                fontWeight: 800,
+                color: "var(--gold-2)",
+                textAlign: "center",
+              }}
+            >
+              ✦ सभी सट्टा बाज़ार परिणाम (ALL LIVE RESULTS) ✦
+            </div>
+
+            <div className="cards-mumbai">
+              {filtered.map((g) => {
+                const isPending =
+                  !g.today_number ||
+                  g.today_number === "XX" ||
+                  g.today_number === "--";
+
                 return (
-                  <tr key={r.day} className={isToday ? "today-row" : ""}>
-                    <td>
-                      <b>{r.day}</b>
-                    </td>
-                    <td className={hasNum(r.DS) ? "has-num" : ""}>
-                      {r.DS === "XX" && isToday ? <SpinnerIcon /> : r.DS || "—"}
-                    </td>
-                    <td className={hasNum(r.FB) ? "has-num" : ""}>
-                      {r.FB === "XX" && isToday ? <SpinnerIcon /> : r.FB || "—"}
-                    </td>
-                    <td className={hasNum(r.GB) ? "has-num" : ""}>
-                      {r.GB === "XX" && isToday ? <SpinnerIcon /> : r.GB || "—"}
-                    </td>
-                    <td className={hasNum(r.GL) ? "has-num" : ""}>
-                      {r.GL === "XX" && isToday ? <SpinnerIcon /> : r.GL || "—"}
-                    </td>
-                  </tr>
+                  <div key={g.code} className="card-mumbai">
+                    <div className="card-mumbai-in">
+                      <div className="card-mumbai-name">{g.name}</div>
+                      <div className="card-mumbai-time">
+                        ⏰ {g.draw_time} &nbsp;|&nbsp; कल:{" "}
+                        {g.yesterday_number || "—"}
+                      </div>
+                      <div
+                        className={`card-mumbai-badge ${isPending ? "pending" : ""}`}
+                      >
+                        {isPending ? <SpinnerIcon /> : g.today_number}
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
 
-          <div className="mumbai-nav-btns">
-            <button
-              className="mumbai-btn"
-              onClick={() =>
-                goToMonth(
-                  String(prevMIdx + 1).padStart(2, "0"),
-                  String(prevYear),
-                )
-              }
+            {/* ── MONTHLY ARCHIVE TABLE ── */}
+            <div
+              style={{
+                margin: "40px 0 12px",
+                fontSize: "20px",
+                fontWeight: 800,
+                color: "var(--gold-2)",
+                textAlign: "center",
+              }}
             >
-              ← {MONTH_NAMES[prevMIdx]?.substring(0, 3)} {prevYear}
-            </button>
-            <button
-              className="mumbai-btn"
-              onClick={() =>
-                goToMonth(
-                  String(nextMIdx + 1).padStart(2, "0"),
-                  String(nextYear),
-                )
-              }
-            >
-              {MONTH_NAMES[nextMIdx]?.substring(0, 3)} {nextYear} →
-            </button>
-          </div>
-        </div>
+              📊 मासिक रिकॉर्ड चार्ट &mdash;{" "}
+              {chartData
+                ? `${MONTH_NAMES[parseInt(chartData.month, 10) - 1]?.toUpperCase()} ${chartData.year}`
+                : "ARCHIVE"}
+            </div>
+
+            <div className="archive-card-mumbai">
+              <table className="table-mumbai" aria-label="Monthly Archive Chart">
+                <thead>
+                  <tr>
+                    <th style={{ width: 60 }}>तारीख</th>
+                    <th>DESAWAR</th>
+                    <th>FARIDABAD</th>
+                    <th>GAZIYABAD</th>
+                    <th>GALI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chartData?.rows?.map((r) => {
+                    const isToday = r.day === todayDay;
+                    const hasNum = (val) => val && val !== "XX" && val !== "--";
+                    return (
+                      <tr key={r.day} className={isToday ? "today-row" : ""}>
+                        <td>
+                          <b>{r.day}</b>
+                        </td>
+                        <td className={hasNum(r.DS) ? "has-num" : ""}>
+                          {r.DS === "XX" && isToday ? <SpinnerIcon /> : r.DS || "—"}
+                        </td>
+                        <td className={hasNum(r.FB) ? "has-num" : ""}>
+                          {r.FB === "XX" && isToday ? <SpinnerIcon /> : r.FB || "—"}
+                        </td>
+                        <td className={hasNum(r.GB) ? "has-num" : ""}>
+                          {r.GB === "XX" && isToday ? <SpinnerIcon /> : r.GB || "—"}
+                        </td>
+                        <td className={hasNum(r.GL) ? "has-num" : ""}>
+                          {r.GL === "XX" && isToday ? <SpinnerIcon /> : r.GL || "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div className="mumbai-nav-btns">
+                <button
+                  className="mumbai-btn"
+                  onClick={() =>
+                    goToMonth(
+                      String(prevMIdx + 1).padStart(2, "0"),
+                      String(prevYear),
+                    )
+                  }
+                >
+                  ← {MONTH_NAMES[prevMIdx]?.substring(0, 3)} {prevYear}
+                </button>
+                <button
+                  className="mumbai-btn"
+                  onClick={() =>
+                    goToMonth(
+                      String(nextMIdx + 1).padStart(2, "0"),
+                      String(nextYear),
+                    )
+                  }
+                >
+                  {MONTH_NAMES[nextMIdx]?.substring(0, 3)} {nextYear} →
+                </button>
+              </div>
+            </div>
+
+            {/* Archive Selectors */}
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <select
+                value={chartMonth}
+                onChange={(e) => setChartMonth(e.target.value)}
+                aria-label="Select month"
+                style={{
+                  padding: "6px 12px",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "1px solid var(--gold)",
+                  borderRadius: 6,
+                  color: "var(--gold-2)",
+                  fontFamily: "var(--font-royal)",
+                  fontSize: 13,
+                  margin: "4px 3px",
+                }}
+              >
+                {MONTH_NAMES.map((m, i) => (
+                  <option key={m} value={String(i + 1).padStart(2, "0")}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={chartYear}
+                onChange={(e) => setChartYear(e.target.value)}
+                aria-label="Select year"
+                style={{
+                  padding: "6px 12px",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "1px solid var(--gold)",
+                  borderRadius: 6,
+                  color: "var(--gold-2)",
+                  fontFamily: "var(--font-royal)",
+                  fontSize: 13,
+                  margin: "4px 3px",
+                }}
+              >
+                {[2026, 2025, 2024, 2023, 2022].map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
 
         {/* ── FOOTER ── */}
-        <footer className="footer-mumbai">
-          <p style={{ color: "var(--dim)", marginBottom: 12 }}>
-            {SITE_NAME} &bull; {SITE_DOMAIN} &bull; ALL RIGHTS RESERVED 2026
-          </p>
-          <div style={{ marginBottom: 16 }}>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-wa-mumbai"
-            >
-              💬 24x7 WhatsApp हेल्पलाइन: {WHATSAPP_NUMBER}
-            </a>
-          </div>
-          <div>
-            <select
-              value={chartMonth}
-              onChange={(e) => setChartMonth(e.target.value)}
-              aria-label="Select month"
-            >
-              {MONTH_NAMES.map((m, i) => (
-                <option key={m} value={String(i + 1).padStart(2, "0")}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <select
-              value={chartYear}
-              onChange={(e) => setChartYear(e.target.value)}
-              aria-label="Select year"
-            >
-              {[2026, 2025, 2024, 2023, 2022].map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-        </footer>
+        <Footer onNavigate={navigateTo} />
       </div>
 
       {/* FLOATING WHATSAPP BUTTON */}

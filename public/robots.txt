@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: http://matkasatta.site/sitemap.xml
